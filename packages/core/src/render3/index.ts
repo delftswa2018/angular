@@ -6,12 +6,16 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {createComponentRef, detectChanges, getHostElement, markDirty, renderComponent} from './component';
-import {NgOnChangesFeature, PublicFeature, defineComponent, defineDirective, definePipe} from './definition';
-import {InjectFlags} from './di';
-import {ComponentDef, ComponentTemplate, ComponentType, DirectiveDef, DirectiveDefFlags, DirectiveType} from './interfaces/definition';
+import {LifecycleHooksFeature, getHostElement, getRenderedText, renderComponent, whenRendered} from './component';
+import {NgOnChangesFeature, PublicFeature, defineComponent, defineDirective, defineNgModule, definePipe} from './definition';
+import {ComponentDefInternal, ComponentTemplate, ComponentType, DirectiveDefFlags, DirectiveDefInternal, DirectiveType, PipeDef} from './interfaces/definition';
 
-export {InjectFlags, QUERY_READ_CONTAINER_REF, QUERY_READ_ELEMENT_REF, QUERY_READ_FROM_NODE, QUERY_READ_TEMPLATE_REF, inject, injectElementRef, injectTemplateRef, injectViewContainerRef} from './di';
+export {ComponentFactory, ComponentFactoryResolver, ComponentRef} from './component_ref';
+export {QUERY_READ_CONTAINER_REF, QUERY_READ_ELEMENT_REF, QUERY_READ_FROM_NODE, QUERY_READ_TEMPLATE_REF, directiveInject, injectAttribute, injectChangeDetectorRef, injectElementRef, injectTemplateRef, injectViewContainerRef} from './di';
+export {RenderFlags} from './interfaces/definition';
+export {CssSelectorList} from './interfaces/projection';
+
+
 
 // Naming scheme:
 // - Capital letters are for creating things: T(Text), E(Element), D(Directive), V(View),
@@ -37,21 +41,28 @@ export {
   interpolation8 as i8,
   interpolationV as iV,
 
-  componentRefresh as r,
-
   container as C,
   containerRefreshStart as cR,
   containerRefreshEnd as cr,
 
+  element as Ee,
   elementAttribute as a,
   elementClass as k,
+  elementClassNamed as kn,
   elementEnd as e,
   elementProperty as p,
   elementStart as E,
   elementStyle as s,
+  elementStyleNamed as sn,
 
   listener as L,
-  memory as m,
+  store as st,
+  load as ld,
+  loadDirective as d,
+
+  namespaceHTML as NH,
+  namespaceMathML as NM,
+  namespaceSVG as NS,
 
   projection as P,
   projectionDef as pD,
@@ -59,9 +70,20 @@ export {
   text as T,
   textBinding as t,
 
+  reserveSlots as rS,
+
   embeddedViewStart as V,
   embeddedViewEnd as v,
+  detectChanges,
+  markDirty,
+  tick,
 } from './instructions';
+
+export {NgModuleDef, NgModuleFactory, NgModuleRef, NgModuleType} from './ng_module_ref';
+
+export {
+    AttributeMarker
+} from './interfaces/node';
 
 export {
   pipe as Pp,
@@ -95,17 +117,22 @@ export {
 // clang-format on
 
 export {
-  ComponentDef,
+  ComponentDefInternal,
   ComponentTemplate,
   ComponentType,
-  DirectiveDef,
+  DirectiveDefInternal,
   DirectiveDefFlags,
   DirectiveType,
   NgOnChangesFeature,
   PublicFeature,
+  PipeDef,
+  LifecycleHooksFeature,
   defineComponent,
   defineDirective,
+  defineNgModule,
   definePipe,
+  getHostElement,
+  getRenderedText,
+  renderComponent,
+  whenRendered,
 };
-export {createComponentRef, detectChanges, getHostElement, markDirty, renderComponent};
-export {CssSelector} from './interfaces/projection';

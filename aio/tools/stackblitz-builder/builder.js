@@ -19,9 +19,10 @@ class StackblitzBuilder {
     var packageJson = require(path.join(__dirname, '../examples/shared/boilerplate/cli/package.json'));
     this.examplePackageDependencies = packageJson.dependencies;
 
-    // Add jasmine-core (which is a devDependency) for unit test examples.
+    // Add unit test packages from devDependency for unit test examples
     var devDependencies = packageJson.devDependencies;
     this.examplePackageDependencies['jasmine-core'] = devDependencies['jasmine-core'];
+    this.examplePackageDependencies['jasmine-marbles'] = devDependencies['jasmine-marbles'];
 
     this.copyrights = {};
 
@@ -251,7 +252,7 @@ class StackblitzBuilder {
     }
 
     var defaultIncludes = ['**/*.ts', '**/*.js', '**/*.css', '**/*.html', '**/*.md', '**/*.json', '**/*.png'];
-    var boilerplateIncludes = ['src/environments/*.*', '.angular-cli.json', 'src/polyfills.ts'];
+    var boilerplateIncludes = ['src/environments/*.*', 'angular.json', 'src/polyfills.ts'];
     if (config.files) {
       if (config.files.length > 0) {
         if (config.files[0].substr(0, 1) == '!') {

@@ -24,8 +24,8 @@ export class AnimationTransitionFactory {
       private _triggerName: string, public ast: TransitionAst,
       private _stateStyles: {[stateName: string]: AnimationStateStyles}) {}
 
-  match(currentState: any, nextState: any): boolean {
-    return oneOrMoreTransitionsMatch(this.ast.matchers, currentState, nextState);
+  match(currentState: any, nextState: any, element: any, params: {[key: string]: any}): boolean {
+    return oneOrMoreTransitionsMatch(this.ast.matchers, currentState, nextState, element, params);
   }
 
   buildStyles(stateName: string, params: {[key: string]: any}, errors: any[]) {
@@ -38,8 +38,8 @@ export class AnimationTransitionFactory {
   build(
       driver: AnimationDriver, element: any, currentState: any, nextState: any,
       enterClassName: string, leaveClassName: string, currentOptions?: AnimationOptions,
-      nextOptions?: AnimationOptions,
-      subInstructions?: ElementInstructionMap): AnimationTransitionInstruction {
+      nextOptions?: AnimationOptions, subInstructions?: ElementInstructionMap,
+      skipAstBuild?: boolean): AnimationTransitionInstruction {
     const errors: any[] = [];
 
     const transitionAnimationParams = this.ast.options && this.ast.options.params || EMPTY_OBJECT;
@@ -55,9 +55,10 @@ export class AnimationTransitionFactory {
 
     const animationOptions = {params: {...transitionAnimationParams, ...nextAnimationParams}};
 
-    const timelines = buildAnimationTimelines(
-        driver, element, this.ast.animation, enterClassName, leaveClassName, currentStateStyles,
-        nextStateStyles, animationOptions, subInstructions, errors);
+    const timelines = skipAstBuild ? [] : buildAnimationTimelines(
+                                              driver, element, this.ast.animation, enterClassName,
+                                              leaveClassName, currentStateStyles, nextStateStyles,
+                                              animationOptions, subInstructions, errors);
 
     let totalTime = 0;
     timelines.forEach(tl => { totalTime = Math.max(tl.duration + tl.delay, totalTime); });
@@ -89,8 +90,9 @@ export class AnimationTransitionFactory {
 }
 
 function oneOrMoreTransitionsMatch(
-    matchFns: TransitionMatcherFn[], currentState: any, nextState: any): boolean {
-  return matchFns.some(fn => fn(currentState, nextState));
+    matchFns: TransitionMatcherFn[], currentState: any, nextState: any, element: any,
+    params: {[key: string]: any}): boolean {
+  return matchFns.some(fn => fn(currentState, nextState, element, params));
 }
 
 export class AnimationStateStyles {

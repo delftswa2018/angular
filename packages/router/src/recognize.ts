@@ -7,9 +7,7 @@
  */
 
 import {Type} from '@angular/core';
-import {Observable} from 'rxjs/Observable';
-import {Observer} from 'rxjs/Observer';
-import {of } from 'rxjs/observable/of';
+import {Observable, Observer, of } from 'rxjs';
 
 import {Data, ResolveData, Route, Routes} from './config';
 import {ActivatedRouteSnapshot, ParamsInheritanceStrategy, RouterStateSnapshot, inheritedParamsDataResolve} from './router_state';
@@ -40,8 +38,9 @@ class Recognizer {
       const children = this.processSegmentGroup(this.config, rootSegmentGroup, PRIMARY_OUTLET);
 
       const root = new ActivatedRouteSnapshot(
-          [], Object.freeze({}), Object.freeze(this.urlTree.queryParams), this.urlTree.fragment !,
-          {}, PRIMARY_OUTLET, this.rootComponentType, null, this.urlTree.root, -1, {});
+          [], Object.freeze({}), Object.freeze({...this.urlTree.queryParams}),
+          this.urlTree.fragment !, {}, PRIMARY_OUTLET, this.rootComponentType, null,
+          this.urlTree.root, -1, {});
 
       const rootNode = new TreeNode<ActivatedRouteSnapshot>(root, children);
       const routeState = new RouterStateSnapshot(this.url, rootNode);
@@ -118,7 +117,7 @@ class Recognizer {
     if (route.path === '**') {
       const params = segments.length > 0 ? last(segments) !.parameters : {};
       snapshot = new ActivatedRouteSnapshot(
-          segments, params, Object.freeze(this.urlTree.queryParams), this.urlTree.fragment !,
+          segments, params, Object.freeze({...this.urlTree.queryParams}), this.urlTree.fragment !,
           getData(route), outlet, route.component !, route, getSourceSegmentGroup(rawSegment),
           getPathIndexShift(rawSegment) + segments.length, getResolve(route));
     } else {
@@ -127,7 +126,7 @@ class Recognizer {
       rawSlicedSegments = segments.slice(result.lastChild);
 
       snapshot = new ActivatedRouteSnapshot(
-          consumedSegments, result.parameters, Object.freeze(this.urlTree.queryParams),
+          consumedSegments, result.parameters, Object.freeze({...this.urlTree.queryParams}),
           this.urlTree.fragment !, getData(route), outlet, route.component !, route,
           getSourceSegmentGroup(rawSegment),
           getPathIndexShift(rawSegment) + consumedSegments.length, getResolve(route));

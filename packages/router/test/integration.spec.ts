@@ -13,11 +13,8 @@ import {ComponentFixture, TestBed, fakeAsync, inject, tick} from '@angular/core/
 import {By} from '@angular/platform-browser/src/dom/debug/by';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
 import {ActivatedRoute, ActivatedRouteSnapshot, ActivationEnd, ActivationStart, CanActivate, CanDeactivate, ChildActivationEnd, ChildActivationStart, DetachedRouteHandle, Event, GuardsCheckEnd, GuardsCheckStart, NavigationCancel, NavigationEnd, NavigationError, NavigationStart, PRIMARY_OUTLET, ParamMap, Params, PreloadAllModules, PreloadingStrategy, Resolve, ResolveEnd, ResolveStart, RouteConfigLoadEnd, RouteConfigLoadStart, RouteReuseStrategy, Router, RouterEvent, RouterModule, RouterPreloader, RouterStateSnapshot, RoutesRecognized, RunGuardsAndResolvers, UrlHandlingStrategy, UrlSegmentGroup, UrlTree} from '@angular/router';
-import {Observable} from 'rxjs/Observable';
-import {Observer} from 'rxjs/Observer';
-import {of } from 'rxjs/observable/of';
-import {map} from 'rxjs/operator/map';
-import {log} from 'util';
+import {Observable, Observer, of } from 'rxjs';
+import {map} from 'rxjs/operators';
 
 import {forEach} from '../src/utils/collection';
 import {RouterTestingModule, SpyNgModuleFactoryLoader} from '../testing';
@@ -1330,17 +1327,17 @@ describe('Integration', () => {
                   observer = obs;
                   return () => {};
                 });
-                return map.call(obs$, () => log.push('resolver1'));
+                return obs$.pipe(map(() => log.push('resolver1')));
               }
             },
             {
               provide: 'resolver2',
               useValue: () => {
-                return map.call(of (null), () => {
+                return of (null).pipe(map(() => {
                   log.push('resolver2');
                   observer.next(null);
                   observer.complete();
-                });
+                }));
               }
             },
           ]
@@ -3369,6 +3366,72 @@ describe('Integration', () => {
              expect(location.path()).toEqual('/lazy2/loaded');
            })));
 
+    it('should allow lazy loaded module in named outlet',
+       fakeAsync(inject(
+           [Router, NgModuleFactoryLoader], (router: Router, loader: SpyNgModuleFactoryLoader) => {
+
+             @Component({selector: 'lazy', template: 'lazy-loaded'})
+             class LazyComponent {
+             }
+
+             @NgModule({
+               declarations: [LazyComponent],
+               imports: [RouterModule.forChild([{path: '', component: LazyComponent}])]
+             })
+             class LazyLoadedModule {
+             }
+
+             loader.stubbedModules = {lazyModule: LazyLoadedModule};
+
+             const fixture = createRoot(router, RootCmp);
+
+             router.resetConfig([{
+               path: 'team/:id',
+               component: TeamCmp,
+               children: [
+                 {path: 'user/:name', component: UserCmp},
+                 {path: 'lazy', loadChildren: 'lazyModule', outlet: 'right'},
+               ]
+             }]);
+
+
+             router.navigateByUrl('/team/22/user/john');
+             advance(fixture);
+
+             expect(fixture.nativeElement).toHaveText('team 22 [ user john, right:  ]');
+
+             router.navigateByUrl('/team/22/(user/john//right:lazy)');
+             advance(fixture);
+
+             expect(fixture.nativeElement).toHaveText('team 22 [ user john, right: lazy-loaded ]');
+           })));
+
+    it('should allow componentless named outlet to render children',
+       fakeAsync(inject(
+           [Router, NgModuleFactoryLoader], (router: Router, loader: SpyNgModuleFactoryLoader) => {
+
+             const fixture = createRoot(router, RootCmp);
+
+             router.resetConfig([{
+               path: 'team/:id',
+               component: TeamCmp,
+               children: [
+                 {path: 'user/:name', component: UserCmp},
+                 {path: 'simple', outlet: 'right', children: [{path: '', component: SimpleCmp}]},
+               ]
+             }]);
+
+
+             router.navigateByUrl('/team/22/user/john');
+             advance(fixture);
+
+             expect(fixture.nativeElement).toHaveText('team 22 [ user john, right:  ]');
+
+             router.navigateByUrl('/team/22/(user/john//right:simple)');
+             advance(fixture);
+
+             expect(fixture.nativeElement).toHaveText('team 22 [ user john, right: simple ]');
+           })));
 
     describe('should use the injector of the lazily-loaded configuration', () => {
       class LazyLoadedServiceDefinedInModule {}
@@ -3967,7 +4030,7 @@ class TeamCmp {
   routerLink = ['.'];
 
   constructor(public route: ActivatedRoute) {
-    this.id = map.call(route.params, (p: any) => p['id']);
+    this.id = route.params.pipe(map((p: any) => p['id']));
     route.params.forEach(p => {
       this.recordedParams.push(p);
       this.snapshotParams.push(route.snapshot.params);
@@ -3990,7 +4053,7 @@ class UserCmp {
   snapshotParams: Params[] = [];
 
   constructor(route: ActivatedRoute) {
-    this.name = map.call(route.params, (p: any) => p['name']);
+    this.name = route.params.pipe(map((p: any) => p['name']));
     route.params.forEach(p => {
       this.recordedParams.push(p);
       this.snapshotParams.push(route.snapshot.params);
@@ -4005,11 +4068,11 @@ class WrapperCmp {
 @Component(
     {selector: 'query-cmp', template: `query: {{name | async}} fragment: {{fragment | async}}`})
 class QueryParamsAndFragmentCmp {
-  name: Observable<string>;
+  name: Observable<string|null>;
   fragment: Observable<string>;
 
   constructor(route: ActivatedRoute) {
-    this.name = map.call(route.queryParamMap, (p: ParamMap) => p.get('name'));
+    this.name = route.queryParamMap.pipe(map((p: ParamMap) => p.get('name')));
     this.fragment = route.fragment;
   }
 }
@@ -4103,6 +4166,10 @@ function createRoot(router: Router, type: any): ComponentFixture<any> {
   router.initialNavigation();
   advance(f);
   return f;
+}
+
+@Component({selector: 'lazy', template: 'lazy-loaded'})
+class LazyComponent {
 }
 
 

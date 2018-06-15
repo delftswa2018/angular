@@ -7,14 +7,18 @@
  */
 
 import {SimpleChange} from '../change_detection/change_detection_util';
+import {ChangeDetectionStrategy} from '../change_detection/constants';
 import {PipeTransform} from '../change_detection/pipe_transform';
+import {Provider} from '../core';
 import {OnChanges, SimpleChanges} from '../metadata/lifecycle_hooks';
+import {NgModuleDef, NgModuleDefInternal} from '../metadata/ng_module';
 import {RendererType2} from '../render/api';
 import {Type} from '../type';
 import {resolveRendererType2} from '../view/util';
 
 import {diPublic} from './di';
-import {ComponentDef, ComponentDefArgs, DirectiveDef, DirectiveDefArgs, PipeDef, PipeType} from './interfaces/definition';
+import {ComponentDefFeature, ComponentDefInternal, ComponentTemplate, ComponentType, DirectiveDefFeature, DirectiveDefInternal, DirectiveDefListOrFactory, DirectiveType, DirectiveTypesOrFactory, PipeDef, PipeType, PipeTypesOrFactory} from './interfaces/definition';
+import {CssSelectorList, SelectorFlags} from './interfaces/projection';
 
 
 
@@ -33,33 +37,197 @@ import {ComponentDef, ComponentDefArgs, DirectiveDef, DirectiveDefArgs, PipeDef,
  * }
  * ```
  */
-export function defineComponent<T>(componentDefinition: ComponentDefArgs<T>): ComponentDef<T> {
+export function defineComponent<T>(componentDefinition: {
+  /**
+   * Directive type, needed to configure the injector.
+   */
+  type: Type<T>;
+
+  /** The selectors that will be used to match nodes to this component. */
+  selectors: CssSelectorList;
+
+  /**
+   * Factory method used to create an instance of directive.
+   */
+  factory: () => T | ({0: T} & any[]); /* trying to say T | [T, ...any] */
+
+  /**
+   * Static attributes to set on host element.
+   *
+   * Even indices: attribute name
+   * Odd indices: attribute value
+   */
+  attributes?: string[];
+
+  /**
+   * A map of input names.
+   *
+   * The format is in: `{[actualPropertyName: string]:string}`.
+   *
+   * Which the minifier may translate to: `{[minifiedPropertyName: string]:string}`.
+   *
+   * This allows the render to re-construct the minified and non-minified names
+   * of properties.
+   */
+  inputs?: {[P in keyof T]?: string};
+
+  /**
+   * A map of output names.
+   *
+   * The format is in: `{[actualPropertyName: string]:string}`.
+   *
+   * Which the minifier may translate to: `{[minifiedPropertyName: string]:string}`.
+   *
+   * This allows the render to re-construct the minified and non-minified names
+   * of properties.
+   */
+  outputs?: {[P in keyof T]?: string};
+
+  /**
+   * Function executed by the parent template to allow child directive to apply host bindings.
+   */
+  hostBindings?: (directiveIndex: number, elementIndex: number) => void;
+
+  /**
+   * Defines the name that can be used in the template to assign this directive to a variable.
+   *
+   * See: {@link Directive.exportAs}
+   */
+  exportAs?: string;
+
+  /**
+   * Template function use for rendering DOM.
+   *
+   * This function has following structure.
+   *
+   * ```
+   * function Template<T>(ctx:T, creationMode: boolean) {
+   *   if (creationMode) {
+   *     // Contains creation mode instructions.
+   *   }
+   *   // Contains binding update instructions
+   * }
+   * ```
+   *
+   * Common instructions are:
+   * Creation mode instructions:
+   *  - `elementStart`, `elementEnd`
+   *  - `text`
+   *  - `container`
+   *  - `listener`
+   *
+   * Binding update instructions:
+   * - `bind`
+   * - `elementAttribute`
+   * - `elementProperty`
+   * - `elementClass`
+   * - `elementStyle`
+   *
+   */
+  template: ComponentTemplate<T>;
+
+  /**
+   * A list of optional features to apply.
+   *
+   * See: {@link NgOnChangesFeature}, {@link PublicFeature}
+   */
+  features?: ComponentDefFeature[];
+
+  rendererType?: RendererType2;
+
+  changeDetection?: ChangeDetectionStrategy;
+
+  /**
+   * Defines the set of injectable objects that are visible to a Directive and its light DOM
+   * children.
+   */
+  providers?: Provider[];
+
+  /**
+   * Defines the set of injectable objects that are visible to its view DOM children.
+   */
+  viewProviders?: Provider[];
+
+  /**
+   * Registry of directives and components that may be found in this component's view.
+   *
+   * The property is either an array of `DirectiveDef`s or a function which returns the array of
+   * `DirectiveDef`s. The function is necessary to be able to support forward declarations.
+   */
+  directives?: DirectiveTypesOrFactory | null;
+
+  /**
+   * Registry of pipes that may be found in this component's view.
+   *
+   * The property is either an array of `PipeDefs`s or a function which returns the array of
+   * `PipeDefs`s. The function is necessary to be able to support forward declarations.
+   */
+  pipes?: PipeTypesOrFactory | null;
+}): never {
   const type = componentDefinition.type;
-  const def = <ComponentDef<any>>{
+  const pipeTypes = componentDefinition.pipes !;
+  const directiveTypes = componentDefinition.directives !;
+  const def: ComponentDefInternal<any> = {
     type: type,
     diPublic: null,
-    n: componentDefinition.factory,
-    tag: (componentDefinition as ComponentDefArgs<T>).tag || null !,
-    template: (componentDefinition as ComponentDefArgs<T>).template || null !,
-    h: componentDefinition.hostBindings || noop,
+    factory: componentDefinition.factory,
+    template: componentDefinition.template || null !,
+    hostBindings: componentDefinition.hostBindings || null,
+    attributes: componentDefinition.attributes || null,
     inputs: invertObject(componentDefinition.inputs),
     outputs: invertObject(componentDefinition.outputs),
-    methods: invertObject(componentDefinition.methods),
     rendererType: resolveRendererType2(componentDefinition.rendererType) || null,
-    exportAs: componentDefinition.exportAs,
+    exportAs: componentDefinition.exportAs || null,
     onInit: type.prototype.ngOnInit || null,
     doCheck: type.prototype.ngDoCheck || null,
     afterContentInit: type.prototype.ngAfterContentInit || null,
     afterContentChecked: type.prototype.ngAfterContentChecked || null,
     afterViewInit: type.prototype.ngAfterViewInit || null,
     afterViewChecked: type.prototype.ngAfterViewChecked || null,
-    onDestroy: type.prototype.ngOnDestroy || null
+    onDestroy: type.prototype.ngOnDestroy || null,
+    onPush: componentDefinition.changeDetection === ChangeDetectionStrategy.OnPush,
+    directiveDefs: directiveTypes ?
+        () => (typeof directiveTypes === 'function' ? directiveTypes() : directiveTypes)
+                  .map(extractDirectiveDef) :
+        null,
+    pipeDefs: pipeTypes ?
+        () => (typeof pipeTypes === 'function' ? pipeTypes() : pipeTypes).map(extractPipeDef) :
+        null,
+    selectors: componentDefinition.selectors
   };
   const feature = componentDefinition.features;
   feature && feature.forEach((fn) => fn(def));
+  return def as never;
+}
+
+export function extractDirectiveDef(type: DirectiveType<any>& ComponentType<any>):
+    DirectiveDefInternal<any>|ComponentDefInternal<any> {
+  const def = type.ngComponentDef || type.ngDirectiveDef;
+  if (ngDevMode && !def) {
+    throw new Error(`'${type.name}' is neither 'ComponentType' or 'DirectiveType'.`);
+  }
   return def;
 }
 
+export function extractPipeDef(type: PipeType<any>): PipeDef<any> {
+  const def = type.ngPipeDef;
+  if (ngDevMode && !def) {
+    throw new Error(`'${type.name}' is not a 'PipeType'.`);
+  }
+  return def;
+}
+
+export function defineNgModule<T>(def: {type: T} & Partial<NgModuleDef<T, any, any, any>>): never {
+  const res: NgModuleDefInternal<T> = {
+    type: def.type,
+    bootstrap: def.bootstrap || [],
+    declarations: def.declarations || [],
+    imports: def.imports || [],
+    exports: def.exports || [],
+    transitiveCompileScopes: null,
+  };
+  return res as never;
+}
 
 const PRIVATE_PREFIX = '__ngOnChanges_';
 
@@ -68,46 +236,80 @@ type OnChangesExpando = OnChanges & {
   [key: string]: any;
 };
 
-export function NgOnChangesFeature(definition: DirectiveDef<any>): void {
-  const inputs = definition.inputs;
-  const proto = definition.type.prototype;
-  // Place where we will store SimpleChanges if there is a change
-  Object.defineProperty(proto, PRIVATE_PREFIX, {value: undefined, writable: true});
-  for (let pubKey in inputs) {
-    const minKey = inputs[pubKey];
-    const privateMinKey = PRIVATE_PREFIX + minKey;
-    // Create a place where the actual value will be stored and make it non-enumerable
-    Object.defineProperty(proto, privateMinKey, {value: undefined, writable: true});
-
-    const existingDesc = Object.getOwnPropertyDescriptor(proto, minKey);
-
-    // create a getter and setter for property
-    Object.defineProperty(proto, minKey, {
-      get: function(this: OnChangesExpando) {
-        return (existingDesc && existingDesc.get) ? existingDesc.get.call(this) :
-                                                    this[privateMinKey];
-      },
-      set: function(this: OnChangesExpando, value: any) {
-        let simpleChanges = this[PRIVATE_PREFIX];
-        let isFirstChange = simpleChanges === undefined;
-        if (simpleChanges == null) {
-          simpleChanges = this[PRIVATE_PREFIX] = {};
+/**
+ * Creates an NgOnChangesFeature function for a component's features list.
+ *
+ * It accepts an optional map of minified input property names to original property names,
+ * if any input properties have a public alias.
+ *
+ * The NgOnChangesFeature function that is returned decorates a component with support for
+ * the ngOnChanges lifecycle hook, so it should be included in any component that implements
+ * that hook.
+ *
+ * Example usage:
+ *
+ * ```
+ * static ngComponentDef = defineComponent({
+ *   ...
+ *   inputs: {name: 'publicName'},
+ *   features: [NgOnChangesFeature({name: 'name'})]
+ * });
+ * ```
+ *
+ * @param inputPropertyNames Map of input property names, if they are aliased
+ * @returns DirectiveDefFeature
+ */
+export function NgOnChangesFeature(inputPropertyNames?: {[key: string]: string}):
+    DirectiveDefFeature {
+  return function(definition: DirectiveDefInternal<any>): void {
+    const inputs = definition.inputs;
+    const proto = definition.type.prototype;
+    for (let pubKey in inputs) {
+      const minKey = inputs[pubKey];
+      const propertyName = inputPropertyNames && inputPropertyNames[minKey] || pubKey;
+      const privateMinKey = PRIVATE_PREFIX + minKey;
+      const originalProperty = Object.getOwnPropertyDescriptor(proto, minKey);
+      const getter = originalProperty && originalProperty.get;
+      const setter = originalProperty && originalProperty.set;
+      // create a getter and setter for property
+      Object.defineProperty(proto, minKey, {
+        get: getter ||
+            (setter ? undefined : function(this: OnChangesExpando) { return this[privateMinKey]; }),
+        set: function(this: OnChangesExpando, value: any) {
+          let simpleChanges = this[PRIVATE_PREFIX];
+          if (!simpleChanges) {
+            // Place where we will store SimpleChanges if there is a change
+            Object.defineProperty(
+                this, PRIVATE_PREFIX, {value: simpleChanges = {}, writable: true});
+          }
+          const isFirstChange = !this.hasOwnProperty(privateMinKey);
+          const currentChange: SimpleChange|undefined = simpleChanges[propertyName];
+          if (currentChange) {
+            currentChange.currentValue = value;
+          } else {
+            simpleChanges[propertyName] =
+                new SimpleChange(this[privateMinKey], value, isFirstChange);
+          }
+          if (isFirstChange) {
+            // Create a place where the actual value will be stored and make it non-enumerable
+            Object.defineProperty(this, privateMinKey, {value, writable: true});
+          } else {
+            this[privateMinKey] = value;
+          }
+          setter && setter.call(this, value);
         }
-        simpleChanges[pubKey] = new SimpleChange(this[privateMinKey], value, isFirstChange);
-        (existingDesc && existingDesc.set) ? existingDesc.set.call(this, value) :
-                                             this[privateMinKey] = value;
-      }
-    });
-  }
+      });
+    }
 
-  // If an onInit hook is defined, it will need to wrap the ngOnChanges call
-  // so the call order is changes-init-check in creation mode. In subsequent
-  // change detection runs, only the check wrapper will be called.
-  if (definition.onInit != null) {
-    definition.onInit = onChangesWrapper(definition.onInit);
-  }
+    // If an onInit hook is defined, it will need to wrap the ngOnChanges call
+    // so the call order is changes-init-check in creation mode. In subsequent
+    // change detection runs, only the check wrapper will be called.
+    if (definition.onInit != null) {
+      definition.onInit = onChangesWrapper(definition.onInit);
+    }
 
-  definition.doCheck = onChangesWrapper(definition.doCheck);
+    definition.doCheck = onChangesWrapper(definition.doCheck);
+  };
 
   function onChangesWrapper(delegateHook: (() => void) | null) {
     return function(this: OnChangesExpando) {
@@ -122,13 +324,11 @@ export function NgOnChangesFeature(definition: DirectiveDef<any>): void {
 }
 
 
-export function PublicFeature<T>(definition: DirectiveDef<T>) {
+export function PublicFeature<T>(definition: DirectiveDefInternal<T>) {
   definition.diPublic = diPublic;
 }
 
 const EMPTY = {};
-
-function noop() {}
 
 /** Swaps the keys and values of an object. */
 function invertObject(obj: any): any {
@@ -154,8 +354,71 @@ function invertObject(obj: any): any {
  * }
  * ```
  */
-export const defineDirective = defineComponent as<T>(directiveDefinition: DirectiveDefArgs<T>) =>
-    DirectiveDef<T>;
+export const defineDirective = defineComponent as any as<T>(directiveDefinition: {
+  /**
+   * Directive type, needed to configure the injector.
+   */
+  type: Type<T>;
+
+  /** The selectors that will be used to match nodes to this directive. */
+  selectors: CssSelectorList;
+
+  /**
+   * Factory method used to create an instance of directive.
+   */
+  factory: () => T | ({0: T} & any[]); /* trying to say T | [T, ...any] */
+
+  /**
+   * Static attributes to set on host element.
+   *
+   * Even indices: attribute name
+   * Odd indices: attribute value
+   */
+  attributes?: string[];
+
+  /**
+   * A map of input names.
+   *
+   * The format is in: `{[actualPropertyName: string]:string}`.
+   *
+   * Which the minifier may translate to: `{[minifiedPropertyName: string]:string}`.
+   *
+   * This allows the render to re-construct the minified and non-minified names
+   * of properties.
+   */
+  inputs?: {[P in keyof T]?: string};
+
+  /**
+   * A map of output names.
+   *
+   * The format is in: `{[actualPropertyName: string]:string}`.
+   *
+   * Which the minifier may translate to: `{[minifiedPropertyName: string]:string}`.
+   *
+   * This allows the render to re-construct the minified and non-minified names
+   * of properties.
+   */
+  outputs?: {[P in keyof T]?: string};
+
+  /**
+   * A list of optional features to apply.
+   *
+   * See: {@link NgOnChangesFeature}, {@link PublicFeature}
+   */
+  features?: DirectiveDefFeature[];
+
+  /**
+   * Function executed by the parent template to allow child directive to apply host bindings.
+   */
+  hostBindings?: (directiveIndex: number, elementIndex: number) => void;
+
+  /**
+   * Defines the name that can be used in the template to assign this directive to a variable.
+   *
+   * See: {@link Directive.exportAs}
+   */
+  exportAs?: string;
+}) => never;
 
 /**
  * Create a pipe definition object.
@@ -169,12 +432,25 @@ export const defineDirective = defineComponent as<T>(directiveDefinition: Direct
  *   });
  * }
  * ```
- * @param type Pipe class reference. Needed to extract pipe lifecycle hooks.
- * @param factory A factory for creating a pipe instance.
- * @param pure Whether the pipe is pure.
+ * @param pipeDef Pipe definition generated by the compiler
  */
-export function definePipe<T>(
-    {type, factory, pure}: {type: Type<T>, factory: () => PipeTransform, pure?: boolean}):
-    PipeDef<T> {
-  throw new Error('TODO: implement!');
+export function definePipe<T>(pipeDef: {
+  /** Name of the pipe. Used for matching pipes in template to pipe defs. */
+  name: string,
+
+  /** Pipe class reference. Needed to extract pipe lifecycle hooks. */
+  type: Type<T>,
+
+  /** A factory for creating a pipe instance. */
+  factory: () => T,
+
+  /** Whether the pipe is pure. */
+  pure?: boolean
+}): never {
+  return (<PipeDef<T>>{
+    name: pipeDef.name,
+    factory: pipeDef.factory,
+    pure: pipeDef.pure !== false,
+    onDestroy: pipeDef.type.prototype.ngOnDestroy || null
+  }) as never;
 }

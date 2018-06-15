@@ -8,19 +8,18 @@
 
 import {Injectable} from '@angular/core';
 import {Connection, ConnectionBackend, ReadyState, Request, Response} from '@angular/http';
-import {ReplaySubject} from 'rxjs/ReplaySubject';
-import {Subject} from 'rxjs/Subject';
-import {take} from 'rxjs/operator/take';
+import {ReplaySubject, Subject} from 'rxjs';
+import {take} from 'rxjs/operators';
 
 
 /**
  *
  * Mock Connection to represent a {@link Connection} for tests.
  *
- * @deprecated use @angular/common/http instead
+ * @deprecated see https://angular.io/guide/http
  */
 export class MockConnection implements Connection {
-  // TODO Name `readyState` should change to be more generic, and states could be made to be more
+  // TODO: Name `readyState` should change to be more generic, and states could be made to be more
   // descriptive than ResourceLoader states.
   /**
    * Describes the state of the connection, based on `XMLHttpRequest.readyState`, but with
@@ -40,7 +39,7 @@ export class MockConnection implements Connection {
   response: ReplaySubject<Response>;
 
   constructor(req: Request) {
-    this.response = <any>take.call(new ReplaySubject(1), 1);
+    this.response = <any>new ReplaySubject(1).pipe(take(1));
     this.readyState = ReadyState.Open;
     this.request = req;
   }
@@ -190,7 +189,7 @@ export class MockConnection implements Connection {
  *
  * This method only exists in the mock implementation, not in real Backends.
  *
- * @deprecated use @angular/common/http instead
+ * @deprecated see https://angular.io/guide/http
  */
 @Injectable()
 export class MockBackend implements ConnectionBackend {

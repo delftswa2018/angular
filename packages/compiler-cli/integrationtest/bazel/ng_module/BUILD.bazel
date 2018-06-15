@@ -3,6 +3,8 @@ load("//packages/bazel:index.bzl", "ng_module")
 ng_module(
     name = "test_module",
     srcs = glob(["*.ts"]),
+    entry_point = "index.ts",
+    flat_module_out_file = "flat_module_filename",
     module_name = "some_npm_module",
     deps = ["//packages/core"],
 )

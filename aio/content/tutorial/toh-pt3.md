@@ -5,10 +5,10 @@ At the moment, the `HeroesComponent` displays both the list of heroes and the se
 Keeping all features in one component as the application grows will not be maintainable.
 You'll want to split up large components into smaller sub-components, each focused on a specific task or workflow.
 
-In this page, you'll take the first step in that direction by moving the hero details into a separate, reusable `HeroDetailsComponent`.
+In this page, you'll take the first step in that direction by moving the hero details into a separate, reusable `HeroDetailComponent`.
 
 The `HeroesComponent` will only present the list of heroes.
-The `HeroDetailsComponent` will present details of a selected hero.
+The `HeroDetailComponent` will present details of a selected hero.
 
 ## Make the `HeroDetailComponent`
 
@@ -96,7 +96,7 @@ Bind the `HeroesComponent.selectedHero` to the element's `hero` property like th
 `[hero]="selectedHero"` is an Angular [property binding](guide/template-syntax#property-binding).
 
 It's a _one way_ data binding from
-the `selectedHero` property of the `HeroComponent` to the `hero` property of the target element, which maps to the `hero` property of the `HeroDetailComponent`.
+the `selectedHero` property of the `HeroesComponent` to the `hero` property of the target element, which maps to the `hero` property of the `HeroDetailComponent`.
 
 Now when the user clicks a hero in the list, the `selectedHero` changes.
 When the `selectedHero` changes, the _property binding_ updates `hero`

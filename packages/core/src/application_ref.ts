@@ -6,11 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Observable} from 'rxjs/Observable';
-import {Observer} from 'rxjs/Observer';
-import {Subscription} from 'rxjs/Subscription';
-import {merge} from 'rxjs/observable/merge';
-import {share} from 'rxjs/operator/share';
+import {Observable, Observer, Subscription, merge} from 'rxjs';
+import {share} from 'rxjs/operators';
 
 import {ErrorHandler} from '../src/error_handler';
 import {scheduleMicroTask, stringify} from '../src/util';
@@ -44,7 +41,7 @@ export const ALLOW_MULTIPLE_PLATFORMS = new InjectionToken<boolean>('AllowMultip
  * does not result in additional changes to any bindings (also known as
  * unidirectional data flow).
  *
- * @stable
+ *
  */
 export function enableProdMode(): void {
   if (_runModeLocked) {
@@ -163,7 +160,7 @@ export function getPlatform(): PlatformRef|null {
 /**
  * Provides additional options to the bootstraping process.
  *
- * @stable
+ *
  */
 export interface BootstrapOptions {
   /**
@@ -183,8 +180,6 @@ export interface BootstrapOptions {
  *
  * A page's platform is initialized implicitly when a platform is created via a platform factory
  * (e.g. {@link platformBrowser}), or explicitly by calling the {@link createPlatform} function.
- *
- * @stable
  */
 @Injectable()
 export class PlatformRef {
@@ -199,7 +194,8 @@ export class PlatformRef {
    * Creates an instance of an `@NgModule` for the given platform
    * for offline compilation.
    *
-   * ## Simple Example
+   * @usageNotes
+   * ### Simple Example
    *
    * ```typescript
    * my_module.ts:
@@ -255,7 +251,8 @@ export class PlatformRef {
   /**
    * Creates an instance of an `@NgModule` for a given platform using the given runtime compiler.
    *
-   * ## Simple Example
+   * @usageNotes
+   * ### Simple Example
    *
    * ```typescript
    * @NgModule({
@@ -265,7 +262,7 @@ export class PlatformRef {
    *
    * let moduleRef = platformBrowser().bootstrapModule(MyModule);
    * ```
-   * @stable
+   *
    */
   bootstrapModule<M>(
       moduleType: Type<M>, compilerOptions: (CompilerOptions&BootstrapOptions)|
@@ -361,8 +358,6 @@ function optionsReducer<T extends Object>(dst: any, objs: T | T[]): T {
 
 /**
  * A reference to an Angular application running on a page.
- *
- * @stable
  */
 @Injectable()
 export class ApplicationRef {
@@ -445,20 +440,21 @@ export class ApplicationRef {
     });
 
     (this as{isStable: Observable<boolean>}).isStable =
-        merge(isCurrentlyStable, share.call(isStable));
+        merge(isCurrentlyStable, isStable.pipe(share()));
   }
 
   /**
    * Bootstrap a new component at the root level of the application.
    *
+   * @usageNotes
    * ### Bootstrap process
    *
    * When bootstrapping a new root component into an application, Angular mounts the
-   * specified application component onto DOM elements identified by the [componentType]'s
+   * specified application component onto DOM elements identified by the componentType's
    * selector and kicks off automatic change detection to finish initializing the component.
    *
    * Optionally, a component can be mounted onto a DOM element that does not match the
-   * [componentType]'s selector.
+   * componentType's selector.
    *
    * ### Example
    * {@example core/ts/platform/platform.ts region='longform'}

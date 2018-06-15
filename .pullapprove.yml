@@ -7,8 +7,9 @@
 #
 # alexeagle - Alex Eagle
 # alxhub - Alex Rickabaugh
+# andrewseguin - Andrew Seguin
+# brandonroberts - Brandon Roberts
 # brocco - Mike Brocchi
-# chuckjaz - Chuck Jazdzewski
 # filipesilva - Filipe Silva
 # gkalpak - George Kalpakas
 # hansl - Hans Larsen
@@ -16,6 +17,7 @@
 # jasonaden - Jason Aden
 # kapunahelewong - Kapunahele Wong
 # kara - Kara Erickson
+# kyliau - Keen Yee Liau
 # matsko - Matias Niemelä
 # mhevery - Misko Hevery
 # petebacondarwin - Pete Bacon Darwin
@@ -68,6 +70,7 @@ groups:
           - "packages/*"
           - "tools/*"
     users:
+      - alexeagle
       - IgorMinar
       - mhevery
 
@@ -91,7 +94,7 @@ groups:
           - "tools/bazel.rc"
     users:
       - alexeagle #primary
-      - chuckjaz
+      - kyliau
       - IgorMinar #fallback
       - mhevery
       - vikerman #fallback
@@ -130,7 +133,7 @@ groups:
         - "packages/core/*"
     users:
       - mhevery #primary
-      - chuckjaz
+      - jasonaden
       - kara
       - vicb
       - IgorMinar #fallback
@@ -151,7 +154,7 @@ groups:
         - "packages/compiler/src/i18n/*"
     users:
       - vicb #primary
-      - chuckjaz
+      - alxhub
       - IgorMinar #fallback
       - mhevery #fallback
 
@@ -160,7 +163,7 @@ groups:
       files:
         - "packages/compiler/*"
     users:
-      - chuckjaz #primary
+      - alxhub #primary
       - vicb
       - mhevery
       - IgorMinar #fallback
@@ -185,7 +188,7 @@ groups:
           - "packages/compiler-cli/src/ngtools*"
     users:
       - alexeagle
-      - chuckjaz
+      - alxhub
       - vicb
       - IgorMinar #fallback
       - mhevery #fallback
@@ -234,7 +237,7 @@ groups:
       files:
         - "packages/language-service/*"
     users:
-      - chuckjaz #primary
+      - kyliau #primary
       # needs secondary
       - vicb
       - IgorMinar #fallback
@@ -301,6 +304,17 @@ groups:
       - IgorMinar #fallback
       - mhevery #fallback
 
+  elements:
+    conditions:
+      files:
+        - "packages/elements/*"
+    users:
+      - andrewseguin #primary
+      - gkalpak
+      - robwormald
+      - IgorMinar #fallback
+      - mhevery #fallback
+
   benchpress:
     conditions:
       files:
@@ -339,6 +353,7 @@ groups:
       - petebacondarwin
       - gkalpak
       - IgorMinar
+      - brandonroberts
       - mhevery #fallback
 
   angular.io-marketing:
@@ -353,4 +368,5 @@ groups:
       - petebacondarwin
       - gkalpak
       - IgorMinar
+      - robwormald
       - mhevery #fallback

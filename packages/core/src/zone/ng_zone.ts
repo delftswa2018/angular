@@ -24,6 +24,7 @@ import {EventEmitter} from '../event_emitter';
  *   - link to runOutsideAngular/run (throughout this file!)
  *   -->
  *
+ * @usageNotes
  * ### Example
  *
  * ```
@@ -130,6 +131,10 @@ export class NgZone {
 
     if ((Zone as any)['wtfZoneSpec']) {
       self._inner = self._inner.fork((Zone as any)['wtfZoneSpec']);
+    }
+
+    if ((Zone as any)['TaskTrackingZoneSpec']) {
+      self._inner = self._inner.fork(new ((Zone as any)['TaskTrackingZoneSpec'] as any));
     }
 
     if (enableLongStackTrace && (Zone as any)['longStackTraceZoneSpec']) {

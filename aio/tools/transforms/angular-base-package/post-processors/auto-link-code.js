@@ -45,7 +45,7 @@ module.exports = function autoLinkCode(getDocFromAlias) {
                 parent.children.splice(index, 1, createLinkNode(docs[0], node.value));
               } else {
                 // Parse the text for words that we can convert to links
-                const nodes = textContent(node).split(/([A-Za-z0-9_-]+)/)
+                const nodes = textContent(node).split(/([A-Za-z0-9_.-]+)/)
                   .filter(word => word.length)
                   .map((word, index, words) => {
                     // remove docs that fail the custom filter tests
@@ -65,7 +65,9 @@ module.exports = function autoLinkCode(getDocFromAlias) {
     };
   }
   function foundValidDoc(docs) {
-    return docs.length === 1 && autoLinkCodeImpl.docTypes.indexOf(docs[0].docType) !== -1;
+    return docs.length === 1 &&
+           !docs[0].internal &&
+           autoLinkCodeImpl.docTypes.indexOf(docs[0].docType) !== -1;
   }
 
   function createLinkNode(doc, text) {

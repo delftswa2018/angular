@@ -27,7 +27,7 @@ aio-shell.page-docs {
 }
 
 .sidenav-content button {
-  min-width: 50px;
+  min-width: 24px;
 }
 
 #guide-change-log h2::before {
@@ -36,12 +36,4 @@ aio-shell.page-docs {
   height: 1px;
   margin: 24px 0px;
   background: $lightgray;
-}
-
-.page-actions {
-  display: flex;
-  flex-direction: column;
-  position: absolute;
-  top: 80px;
-  right: 24px;
 }

@@ -78,6 +78,10 @@ export class CompilerImpl implements Compiler {
   }
   clearCache(): void { this._delegate.clearCache(); }
   clearCacheFor(type: Type<any>) { this._delegate.clearCacheFor(type); }
+  getModuleId(moduleType: Type<any>): string|undefined {
+    const meta = this._metadataResolver.getNgModuleMetadata(moduleType);
+    return meta && meta.id || undefined;
+  }
 }
 
 /**
@@ -162,7 +166,6 @@ export class JitCompilerFactory implements CompilerFactory {
       useJit: true,
       defaultEncapsulation: ViewEncapsulation.Emulated,
       missingTranslation: MissingTranslationStrategy.Warning,
-      enableLegacyTemplate: false,
     };
 
     this._defaultOptions = [compilerOptions, ...defaultOptions];
@@ -182,7 +185,6 @@ export class JitCompilerFactory implements CompilerFactory {
             // from the app providers
             defaultEncapsulation: opts.defaultEncapsulation,
             missingTranslation: opts.missingTranslation,
-            enableLegacyTemplate: opts.enableLegacyTemplate,
             preserveWhitespaces: opts.preserveWhitespaces,
           });
         },
@@ -200,7 +202,6 @@ function _mergeOptions(optionsArr: CompilerOptions[]): CompilerOptions {
     defaultEncapsulation: _lastDefined(optionsArr.map(options => options.defaultEncapsulation)),
     providers: _mergeArrays(optionsArr.map(options => options.providers !)),
     missingTranslation: _lastDefined(optionsArr.map(options => options.missingTranslation)),
-    enableLegacyTemplate: _lastDefined(optionsArr.map(options => options.enableLegacyTemplate)),
     preserveWhitespaces: _lastDefined(optionsArr.map(options => options.preserveWhitespaces)),
   };
 }

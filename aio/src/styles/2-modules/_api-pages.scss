@@ -1,3 +1,25 @@
+.github-links {
+  float: right;
+  .material-icons {
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 20px;
+    &:hover {
+      background-color: $mist;
+    }
+  }
+}
+
+.api-header {
+  display: flex;
+  align-items: center;
+
+  @media screen and (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 .api-body {
 
   .class-overview {
@@ -8,41 +30,30 @@
     }
   }
 
-  .sidebar {
-      box-shadow: 0 2px 2px rgba(10, 16, 20, 0.24), 0 0 2px rgba(10, 16, 20, 0.12);
-      border-radius: 2px;
-      background: #FAFAFA;
-      float: right;
-      margin: 20px;
-      padding: 0 24px 14px;
+  .method-table, .option-table {
+    th {
+      display: flex;
+      align-items: center;
 
-      h2 {
-        margin: 18px 0 4px;
+      h3 {
+        flex: 1;
       }
 
-      ul {
-        margin: 0;
-        padding-left: 14px;
+      .github-links {
+        a {
+          color: $mediumgray;
+          .material-icons:hover {
+            background: none;
+            color: $blue;
+          }
+        }
       }
-  }
-  .inline-sidebar {
-      display: none;
-  }
+    }
 
-  @media (max-width: 1200px) {
-      .sidebar {
-          display: none;
-      }
-      .inline-sidebar {
-          display: block;
-      }
-  }
-
-
-  .method-table {
     h3 {
       margin: 6px 0;
       font-weight: bold;
+      clear: left;
     }
 
     h4 {
@@ -55,6 +66,11 @@
   .api-heading {
     padding: 5px 0;
     font-size: 16px;
+    font-weight: bold;
+  }
+
+  .short-description {
+    margin: 6px 0 0 10px;
   }
 
   .properties-table {
@@ -91,11 +107,7 @@
     }
 }
 
-  .api-section aio-code {
-    background-color: rgba(241, 241, 241, 0.2);
-  }
-
-  .from-constructor {
+  .from-constructor, .read-only-property {
     font-style: italic;
     color: $blue;
   }
